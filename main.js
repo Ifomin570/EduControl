@@ -38,37 +38,20 @@ const GIGACHAT_API_KEY = "MDE5YzM2YjUtNWQ5ZC03MTFmLWE2MTItMGVmY2U2MzdmMzI3OmQ5Mj
 let cachedToken = null;
 let tokenExpiryTime = 0;
 // Для allorigins нужно немного изменить код
-
-const CORS_PROXY = 'https://cors.exploit.lol/';
-
 async function getGigaChatToken() {
-    if (cachedToken && Date.now() < tokenExpiryTime) {
-        return cachedToken;
-    }
-
-    try {
-        console.log('🔄 Получаем токен...');
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
         
-        const response = await fetch('https://cors.exploit.lol/' + 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': `Basic ${GIGACHAT_API_KEY}`,
-                'RqUID': crypto.randomUUID()
-            },
-            body: 'scope=GIGACHAT_API_PERS'
-        });
+        window[callbackName] = function(data) {
+            delete window[callbackName];
+            document.body.removeChild(script);
+            resolve(data.access_token);
+        };
 
-        const data = await response.json();
-        cachedToken = data.access_token;
-        tokenExpiryTime = Date.now() + 25 * 60 * 1000;
-        
-        return cachedToken;
-
-    } catch (error) {
-        console.error('❌ Ошибка:', error);
-        return null;
-    }
+        script.src = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://ngw.devices.sberbank.ru:9443/api/v2/oauth') + '&callback=' + callbackName;
+        document.body.appendChild(script);
+    });
 }
 /* ========================================================
    🔧 ИНИЦИАЛИЗАЦИЯ СТРАНИЦЫ
