@@ -39,7 +39,7 @@ let cachedToken = null;
 let tokenExpiryTime = 0;
 
 // CORS-прокси для GigaChat
-const CORS_PROXY = 'https://corsproxy.io/?';
+const CORS_PROXY = 'https://thingproxy.freeboard.io/fetch/';
 
 // Модифицированная функция получения токена
 async function getGigaChatToken() {
