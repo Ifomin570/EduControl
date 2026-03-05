@@ -33,27 +33,23 @@ let wrongQuestions = [];
    🤖 ЗАГРУЗКА ОБЪЯСНЕНИЯ ОТ GigaChat
    ======================================================== */
 
-const GIGACHAT_API_KEY = "MDE5YzM2YjUtNWQ5ZC03MTFmLWE2MTItMGVmY2U2MzdmMzI3OjUwMGU5Zjk1LWUzMTMtNGFkMC05OWZhLWU3NGQ1ZTQ0MDIzMA==";// Функция получения токена с таймаутом
+const GIGACHAT_API_KEY = "MDE5YzM2YjUtNWQ5ZC03MTFmLWE2MTItMGVmY2U2MzdmMzI3OmQ5MjY1ZjVlLWQ5MDAtNDA5ZS04Zjk1LWMwYTllNTQxZjQ1Yw==";// Функция получения токена с таймаутом
 // Храним токен и время его получения
 let cachedToken = null;
 let tokenExpiryTime = 0;
 // Для allorigins нужно немного изменить код
 
-// ПРОСТОЙ И РАБОЧИЙ ВАРИАНТ
+const CORS_PROXY = 'https://cors.exploit.lol/';
+
 async function getGigaChatToken() {
     if (cachedToken && Date.now() < tokenExpiryTime) {
-        console.log('✅ Используем кэшированный токен');
         return cachedToken;
     }
 
     try {
         console.log('🔄 Получаем токен...');
         
-        // Используем AllOrigins (бесплатный CORS-прокси)
-        const proxyUrl = 'https://api.allorigins.win/raw?url=';
-        const targetUrl = 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth';
-        
-        const response = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
+        const response = await fetch('https://cors.exploit.lol/' + 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -63,16 +59,10 @@ async function getGigaChatToken() {
             body: 'scope=GIGACHAT_API_PERS'
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const data = await response.json();
-        
         cachedToken = data.access_token;
         tokenExpiryTime = Date.now() + 25 * 60 * 1000;
         
-        console.log('✅ Токен получен!');
         return cachedToken;
 
     } catch (error) {
