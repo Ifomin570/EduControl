@@ -875,11 +875,10 @@ async function finishTest(id) {
    🤖 ЗАГРУЗКА ОБЪЯСНЕНИЯ ОТ GigaChat
    ======================================================== */
 
-const GIGACHAT_API_KEY = "MDE5YzM2YjUtNWQ5ZC03MTFmLWE2MTItMGVmY2U2MzdmMzI3OjdmODcyZTZlLTE4OTYtNDIwMC1hYTU2LTNkYjQ2OTFhYzcwZg==";
-// Функция получения токена с таймаутом
+const GIGACHAT_API_KEY = "MDE5YzM2YjUtNWQ5ZC03MTFmLWE2MTItMGVmY2U2MzdmMzI3OmE0YzI2ZTE2LThhMzItNDQ4YS1hZDUzLTZjZDYwOTJhOWNlYQ==";
 async function getGigaChatToken() {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // Таймаут 5 секунд
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     
     try {
         const response = await fetch('https://ngw.devices.sberbank.ru:9443/api/v2/oauth', {
@@ -887,7 +886,8 @@ async function getGigaChatToken() {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'Authorization': `Basic ${GIGACHAT_API_KEY}`,
-                'RqUID': crypto.randomUUID()
+                'RqUID': crypto.randomUUID(), // Это правильно!
+                'Accept': 'application/json'  // Добавьте этот заголовок
             },
             body: 'scope=GIGACHAT_API_PERS',
             signal: controller.signal
@@ -896,15 +896,19 @@ async function getGigaChatToken() {
         clearTimeout(timeoutId);
         
         if (!response.ok) {
+            console.error('Статус ошибки:', response.status);
+            const errorText = await response.text();
+            console.error('Текст ошибки:', errorText);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log('✅ Токен получен, expires:', data.expires_at);
         return data.access_token;
     } catch (error) {
         clearTimeout(timeoutId);
-        console.error('Ошибка получения токена:', error);
-        return null; // Возвращаем null при ошибке
+        console.error('❌ Ошибка получения токена:', error);
+        return null;
     }
 }
 /* ========================================================
