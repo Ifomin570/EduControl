@@ -48,73 +48,41 @@ async function getGigaChatToken() {
         console.log('✅ Используем кэшированный токен');
         return cachedToken;
     }
-    
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
-    
+
     try {
         console.log('🔄 Получаем новый токен через прокси...');
+
+        const targetUrl = 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth';
+        const encodedUrl = encodeURIComponent(targetUrl);
         
-        // 1. Запрос токена через прокси
-       // Для allorigins нужно немного изменить код
-       const tokenResponse = await fetch(CORS_PROXY + encodeURIComponent('https://ngw.devices.sberbank.ru:9443/api/v2/oauth'), {
+        const response = await fetch(CORS_PROXY + encodedUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'Authorization': `Basic ${GIGACHAT_API_KEY}`,
-                'RqUID': crypto.randomUUID(),
-                'Origin': 'https://ifomin570.github.io',
-                'X-Requested-With': 'XMLHttpRequest'
+                'RqUID': crypto.randomUUID()
             },
             body: 'scope=GIGACHAT_API_PERS',
             signal: controller.signal
         });
+
+        const data = await response.json();
         
-        if (!tokenResponse.ok) {
-            throw new Error(`HTTP error! status: ${tokenResponse.status}`);
-        }
+        // Для allorigins ответ может быть в data.contents
+        const tokenData = data.contents ? JSON.parse(data.contents) : data;
         
-        const tokenData = await tokenResponse.json();
-        const accessToken = tokenData.access_token;
-        
-        // Сохраняем токен
-        cachedToken = accessToken;
+        cachedToken = tokenData.access_token;
         tokenExpiryTime = Date.now() + 25 * 60 * 1000;
-        
+
         console.log('✅ Токен получен!');
-        return accessToken;
-        
+        return cachedToken;
+
     } catch (error) {
         clearTimeout(timeoutId);
         console.error('❌ Ошибка получения токена:', error);
-        
-        // Пробуем альтернативный прокси
-        try {
-            console.log('🔄 Пробуем альтернативный прокси...');
-            const altProxy = 'https://cors-proxy.htmldriven.com/?url=';
-            
-            const altResponse = await fetch(altProxy + encodeURIComponent('https://ngw.devices.sberbank.ru:9443/api/v2/oauth'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Authorization': `Basic ${GIGACHAT_API_KEY}`,
-                    'RqUID': crypto.randomUUID()
-                },
-                body: 'scope=GIGACHAT_API_PERS'
-            });
-            
-            const altData = await altResponse.json();
-            if (altData.body) {
-                const parsed = JSON.parse(altData.body);
-                cachedToken = parsed.access_token;
-                tokenExpiryTime = Date.now() + 25 * 60 * 1000;
-                console.log('✅ Токен получен через альтернативный прокси!');
-                return parsed.access_token;
-            }
-        } catch (altError) {
-            console.error('❌ Альтернативный прокси тоже не работает');
-        }
-        
         return null;
     }
 }
