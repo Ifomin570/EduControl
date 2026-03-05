@@ -39,50 +39,44 @@ let cachedToken = null;
 let tokenExpiryTime = 0;
 // Для allorigins нужно немного изменить код
 
-// CORS-прокси для GigaChat
-const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
-
-// Модифицированная функция получения токена
+// ПРОСТОЙ И РАБОЧИЙ ВАРИАНТ
 async function getGigaChatToken() {
     if (cachedToken && Date.now() < tokenExpiryTime) {
         console.log('✅ Используем кэшированный токен');
         return cachedToken;
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
     try {
-        console.log('🔄 Получаем новый токен через прокси...');
-
-        const targetUrl = 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth';
-        const encodedUrl = encodeURIComponent(targetUrl);
+        console.log('🔄 Получаем токен...');
         
-        const response = await fetch(CORS_PROXY + encodedUrl, {
+        // Используем AllOrigins (бесплатный CORS-прокси)
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        const targetUrl = 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth';
+        
+        const response = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'Authorization': `Basic ${GIGACHAT_API_KEY}`,
                 'RqUID': crypto.randomUUID()
             },
-            body: 'scope=GIGACHAT_API_PERS',
-            signal: controller.signal
+            body: 'scope=GIGACHAT_API_PERS'
         });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
         const data = await response.json();
         
-        // Для allorigins ответ может быть в data.contents
-        const tokenData = data.contents ? JSON.parse(data.contents) : data;
-        
-        cachedToken = tokenData.access_token;
+        cachedToken = data.access_token;
         tokenExpiryTime = Date.now() + 25 * 60 * 1000;
-
+        
         console.log('✅ Токен получен!');
         return cachedToken;
 
     } catch (error) {
-        clearTimeout(timeoutId);
-        console.error('❌ Ошибка получения токена:', error);
+        console.error('❌ Ошибка:', error);
         return null;
     }
 }
