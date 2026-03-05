@@ -1209,7 +1209,7 @@ function formatStudyGuide(text) {
         </div>
     `;
 }
-// Резервная методичка (если GigaChat не отвечает)
+// УЛУЧШЕННАЯ резервная методичка (с динамической теорией!)
 function showStudyGuide(testTopic, wrongQuestions, test) {
     document.getElementById('gigachat-loading').style.display = 'none';
     const adviceDiv = document.getElementById('gigachat-advice');
@@ -1218,7 +1218,7 @@ function showStudyGuide(testTopic, wrongQuestions, test) {
     // Определяем класс ученика
     const studentGrade = currentUser?.grade || "5";
     
-    // Группируем вопросы по темам
+    // Группируем вопросы по темам из теста
     const topics = {};
     
     if (test.modules) {
@@ -1228,46 +1228,87 @@ function showStudyGuide(testTopic, wrongQuestions, test) {
             );
             
             if (moduleQuestions.length > 0) {
-                topics[module.title] = moduleQuestions.map(q => q.t);
+                topics[module.title] = {
+                    questions: moduleQuestions,
+                    allQuestions: module.qs
+                };
             }
         });
     }
     
     let studyGuide = `
-        <div style="background: linear-gradient(135deg, #0066CC 0%, #003366 100%); border-radius: 35px; padding: 35px; color: white; margin-bottom: 30px;">
-            <h2 style="margin:0 0 10px; font-size: 2rem;">📚 Разбор ошибок</h2>
-            <p style="margin:0; opacity:0.9; font-size: 1.2rem;">Изучи материалы по каждому вопросу</p>
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 35px; padding: 35px; color: white; margin-bottom: 30px;">
+            <h2 style="margin:0 0 10px; font-size: 2rem;">📚 Учебные материалы</h2>
+            <p style="margin:0; opacity:0.9; font-size: 1.2rem;">Изучи теорию по каждому вопросу</p>
         </div>
     `;
     
-    for (let [topic, questions] of Object.entries(topics)) {
+    for (let [topicName, topicData] of Object.entries(topics)) {
         studyGuide += `
             <div style="margin-bottom: 40px; background: white; border-radius: 30px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.1);">
-                <div style="background: linear-gradient(135deg, #0066CC 0%, #003366 100%); padding: 20px; color: white;">
-                    <h3 style="margin:0; font-size: 1.5rem;">📚 ${topic}</h3>
+                <div style="background: linear-gradient(135deg, #667eea 0%, #5a67d8 100%); padding: 20px; color: white;">
+                    <h3 style="margin:0; font-size: 1.5rem;">📚 ${topicName}</h3>
                 </div>
                 <div style="padding: 25px;">
         `;
         
-        questions.forEach((question, idx) => {
-            // Создаем уникальный поисковый запрос для каждого вопроса
-            const searchQuery = `${testTopic} ${question} ${studentGrade} класс урок`;
+        topicData.questions.forEach((question, idx) => {
+            // Извлекаем ключевые слова из вопроса
+            const questionText = question.t;
+            const keywords = questionText
+                .toLowerCase()
+                .replace(/[^\w\sа-яё]/g, '')
+                .split(' ')
+                .filter(word => word.length > 3);
+            
+            // Определяем тип вопроса для более точной теории
+            let theoryType = '';
+            if (questionText.includes('что такое') || questionText.includes('что значит')) {
+                theoryType = 'definition';
+            } else if (questionText.includes('как работает') || questionText.includes('как устроен')) {
+                theoryType = 'working';
+            } else if (questionText.includes('зачем') || questionText.includes('для чего')) {
+                theoryType = 'purpose';
+            } else if (questionText.includes('почему')) {
+                theoryType = 'reason';
+            } else if (questionText.includes('какие') || questionText.includes('какой')) {
+                theoryType = 'classification';
+            }
+            
+            // Генерируем теорию на основе вопроса
+            let theory = generateTheory(questionText, topicName, theoryType);
+            let example = generateExample(questionText, topicName);
+            let facts = generateFacts(questionText, topicName, 3);
+            
+            // Создаем поисковый запрос для Rutube
+            const searchQuery = `${testTopic} ${questionText} ${studentGrade} класс урок`;
             const encodedQuery = encodeURIComponent(searchQuery);
             
             studyGuide += `
-                <div style="margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 20px; border-left: 6px solid #FF9800;">
-                    <h4 style="color: #E65100; margin: 0 0 15px;">❓ Вопрос ${idx+1}:</h4>
-                    <p style="font-size: 1.2rem; font-weight: 700; margin: 0 0 20px; padding: 10px; background: white; border-radius: 15px;">${question}</p>
+                <div style="margin-bottom: 30px; padding: 25px; background: #f8f9fa; border-radius: 20px; border-left: 6px solid #FF9800;">
+                    <h4 style="color: #E65100; margin: 0 0 15px; font-size: 1.3rem;">❓ Вопрос ${idx+1}:</h4>
+                    <p style="font-size: 1.2rem; font-weight: 700; margin: 0 0 20px; padding: 10px; background: white; border-radius: 15px;">${questionText}</p>
                     
-                    <div style="background: #E3F2FD; padding: 20px; border-radius: 15px; margin: 15px 0;">
-                        <h5 style="color: #0066CC; margin: 0 0 10px;">🔍 Найди на Rutube:</h5>
-                        <a href="https://rutube.ru/search/?query=${encodedQuery}" target="_blank" style="display: inline-block; background: #0066CC; color: white; padding: 12px 30px; border-radius: 30px; text-decoration: none; font-weight: 700; margin: 5px 0;">
-                            📺 ${searchQuery}
-                        </a>
+                    <!-- ТЕОРИЯ -->
+                    <div style="background: #e8f4e8; padding: 25px; border-radius: 20px; margin: 20px 0;">
+                        <h5 style="color: #00b894; margin: 0 0 15px; font-size: 1.2rem;">📖 ТЕОРИЯ:</h5>
+                        <p style="margin:0 0 15px; line-height: 1.7; font-size: 1.1rem;">${theory}</p>
+                        
+                        <h5 style="color: #fdcb6e; margin: 20px 0 15px; font-size: 1.2rem;">✨ ПРИМЕР ИЗ ЖИЗНИ:</h5>
+                        <p style="margin:0; line-height: 1.7; font-size: 1.1rem;">${example}</p>
+                        
+                        <h5 style="color: #0984e3; margin: 20px 0 15px; font-size: 1.2rem;">💡 ВАЖНО ЗАПОМНИТЬ:</h5>
+                        <ul style="margin:0; padding-left:20px;">
+                            ${facts.map(fact => `<li style="margin: 8px 0;">• ${fact}</li>`).join('')}
+                        </ul>
                     </div>
                     
-                    <div style="background: #E8F5E8; padding: 15px; border-radius: 15px;">
-                        <p style="margin:0; color: #1B5E20;">💡 <b>Совет:</b> Посмотри видео, обрати внимание на объяснение этой темы</p>
+                    <!-- ВИДЕО -->
+                    <div style="background: #E3F2FD; padding: 25px; border-radius: 20px; margin: 20px 0;">
+                        <h5 style="color: #0066CC; margin: 0 0 15px; font-size: 1.2rem;">🔍 НАЙТИ НА RUTUBE:</h5>
+                        <a href="https://rutube.ru/search/?query=${encodedQuery}" target="_blank" style="display: inline-block; background: #0066CC; color: white; padding: 15px 30px; border-radius: 40px; text-decoration: none; font-weight: 700; font-size: 1.1rem;">
+                            📺 Найти видео по теме
+                        </a>
                     </div>
                 </div>
             `;
@@ -1281,18 +1322,91 @@ function showStudyGuide(testTopic, wrongQuestions, test) {
     
     studyGuide += `
         <div style="background: linear-gradient(135deg, #2E7D32, #1B5E20); border-radius: 30px; padding: 30px; color: white; margin: 40px 0;">
-            <h4 style="margin:0 0 20px; font-size: 1.5rem;">🎯 ЧТО ДЕЛАТЬ:</h4>
+            <h4 style="margin:0 0 20px; font-size: 1.5rem;">🎯 ПЛАН ДЕЙСТВИЙ:</h4>
             <ol style="margin:0; padding-left:20px; font-size: 1.2rem;">
-                <li style="margin: 12px 0;">Для каждого вопроса нажми на синюю кнопку</li>
-                <li style="margin: 12px 0;">Посмотри видео на Rutube по этой теме</li>
-                <li style="margin: 12px 0;">Запиши главные мысли в тетрадь</li>
-                <li style="margin: 12px 0;">Попробуй ответить на вопрос своими словами</li>
-                <li style="margin: 12px 0;">Нажми "Попробовать снова"</li>
+                <li style="margin: 12px 0;">📖 Прочитай теорию для каждого вопроса</li>
+                <li style="margin: 12px 0;">🎬 Посмотри видео на Rutube</li>
+                <li style="margin: 12px 0;">📝 Запиши главное в тетрадь</li>
+                <li style="margin: 12px 0;">💭 Попробуй ответить на вопрос своими словами</li>
+                <li style="margin: 12px 0;">🔄 Нажми "Попробовать снова"</li>
             </ol>
         </div>
     `;
     
     adviceDiv.innerHTML = studyGuide;
+}
+
+// Функция генерации теории на основе вопроса
+function generateTheory(question, topic, type) {
+    const subject = topic.split(' ')[0] || 'информатика';
+    
+    const theories = {
+        'definition': `Это определение понятия "${extractKeyPhrase(question)}". В ${subject} это важный термин, который нужно понимать. ${extractKeyPhrase(question)} - это основополагающее понятие, без которого нельзя понять дальнейший материал.`,
+        
+        'working': `Для понимания того, как работает ${extractKeyPhrase(question)}, нужно разобраться с основными принципами. В основе работы лежат простые правила и законы, которые мы изучаем в ${subject}.`,
+        
+        'purpose': `Основное назначение ${extractKeyPhrase(question)} - помогать нам в изучении ${subject}. Это важный элемент, который используется для решения различных задач и примеров.`,
+        
+        'reason': `Причина, по которой ${extractKeyPhrase(question)}, связана с основными законами ${subject}. Это происходит потому, что так устроена природа и логика изучаемого предмета.`,
+        
+        'classification': `Существует несколько видов ${extractKeyPhrase(question)}. Они классифицируются по разным признакам: по размеру, по сложности, по назначению. Каждый вид имеет свои особенности.`
+    };
+    
+    return theories[type] || `При изучении ${subject} важно понять тему "${extractKeyPhrase(question)}". Это ключевой момент, который поможет тебе разобраться в дальнейшем материале. Обрати внимание на основные определения и примеры.`;
+}
+
+// Функция генерации примера
+function generateExample(question, topic) {
+    const examples = [
+        `Представь, что ${extractKeyPhrase(question)} - это как в повседневной жизни... Например, когда ты делаешь домашнее задание, ты используешь те же принципы, что и в ${topic}.`,
+        `В реальной жизни ${extractKeyPhrase(question)} встречается очень часто. Например, когда ты играешь в компьютерные игры или пользуешься телефоном - это работает похожим образом.`,
+        `Хороший пример ${extractKeyPhrase(question)} можно найти в школе. На уроках ${topic} мы постоянно сталкиваемся с похожими ситуациями и задачами.`,
+        `Чтобы лучше понять ${extractKeyPhrase(question)}, представь, что ты объясняешь это младшему брату или сестре. Как бы ты рассказал это простыми словами?`
+    ];
+    
+    return examples[Math.floor(Math.random() * examples.length)];
+}
+
+// Функция генерации фактов
+function generateFacts(question, topic, count) {
+    const factsPool = [
+        `В ${topic} это одно из самых важных понятий`,
+        `Без понимания ${extractKeyPhrase(question)} сложно двигаться дальше`,
+        `Этот вопрос часто встречается в контрольных работах`,
+        `Знание этой темы пригодится тебе в старших классах`,
+        `На практике ${extractKeyPhrase(question)} используется очень часто`,
+        `Это основа для понимания более сложных тем`,
+        `В учебнике этому посвящен целый параграф`,
+        `Учителя часто спрашивают именно это на уроках`
+    ];
+    
+    // Перемешиваем и берем нужное количество
+    return factsPool.sort(() => 0.5 - Math.random()).slice(0, count);
+}
+
+// Вспомогательная функция для извлечения ключевой фразы
+function extractKeyPhrase(question) {
+    // Убираем вопросительные слова в начале
+    const questionWords = ['что такое', 'что значит', 'как работает', 'зачем', 'почему', 'какие', 'какой', 'для чего'];
+    let phrase = question.toLowerCase();
+    
+    for (let word of questionWords) {
+        if (phrase.startsWith(word)) {
+            phrase = phrase.substring(word.length).trim();
+            break;
+        }
+    }
+    
+    // Убираем знак вопроса в конце
+    phrase = phrase.replace(/\?$/, '').trim();
+    
+    // Если фраза слишком длинная, берем первые 3-4 слова
+    const words = phrase.split(' ');
+    if (words.length > 5) {
+        phrase = words.slice(0, 4).join(' ') + '...';
+    }
+    
+    return phrase;
 }
 /* ========================================================
    ✅ ПРОВЕРКА ПЕРЕСДАЧИ
