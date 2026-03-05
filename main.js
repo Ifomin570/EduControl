@@ -30,6 +30,93 @@ let currentTestId = null;
 let wrongQuestions = [];
 
 /* ========================================================
+   🤖 ЗАГРУЗКА ОБЪЯСНЕНИЯ ОТ GigaChat
+   ======================================================== */
+
+const GIGACHAT_API_KEY = "MDE5YzM2YjUtNWQ5ZC03MTFmLWE2MTItMGVmY2U2MzdmMzI3OjUwMGU5Zjk1LWUzMTMtNGFkMC05OWZhLWU3NGQ1ZTQ0MDIzMA==";// Функция получения токена с таймаутом
+// Храним токен и время его получения
+let cachedToken = null;
+let tokenExpiryTime = 0;
+
+// CORS-прокси для GigaChat
+const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
+
+// Модифицированная функция получения токена
+async function getGigaChatToken() {
+    if (cachedToken && Date.now() < tokenExpiryTime) {
+        console.log('✅ Используем кэшированный токен');
+        return cachedToken;
+    }
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    
+    try {
+        console.log('🔄 Получаем новый токен через прокси...');
+        
+        // 1. Запрос токена через прокси
+        const tokenResponse = await fetch(CORS_PROXY + 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': `Basic ${GIGACHAT_API_KEY}`,
+                'RqUID': crypto.randomUUID(),
+                'Origin': 'https://ifomin570.github.io',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: 'scope=GIGACHAT_API_PERS',
+            signal: controller.signal
+        });
+        
+        if (!tokenResponse.ok) {
+            throw new Error(`HTTP error! status: ${tokenResponse.status}`);
+        }
+        
+        const tokenData = await tokenResponse.json();
+        const accessToken = tokenData.access_token;
+        
+        // Сохраняем токен
+        cachedToken = accessToken;
+        tokenExpiryTime = Date.now() + 25 * 60 * 1000;
+        
+        console.log('✅ Токен получен!');
+        return accessToken;
+        
+    } catch (error) {
+        clearTimeout(timeoutId);
+        console.error('❌ Ошибка получения токена:', error);
+        
+        // Пробуем альтернативный прокси
+        try {
+            console.log('🔄 Пробуем альтернативный прокси...');
+            const altProxy = 'https://cors-proxy.htmldriven.com/?url=';
+            
+            const altResponse = await fetch(altProxy + encodeURIComponent('https://ngw.devices.sberbank.ru:9443/api/v2/oauth'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': `Basic ${GIGACHAT_API_KEY}`,
+                    'RqUID': crypto.randomUUID()
+                },
+                body: 'scope=GIGACHAT_API_PERS'
+            });
+            
+            const altData = await altResponse.json();
+            if (altData.body) {
+                const parsed = JSON.parse(altData.body);
+                cachedToken = parsed.access_token;
+                tokenExpiryTime = Date.now() + 25 * 60 * 1000;
+                console.log('✅ Токен получен через альтернативный прокси!');
+                return parsed.access_token;
+            }
+        } catch (altError) {
+            console.error('❌ Альтернативный прокси тоже не работает');
+        }
+        
+        return null;
+    }
+}
+/* ========================================================
    🔧 ИНИЦИАЛИЗАЦИЯ СТРАНИЦЫ
    ======================================================== */
 
@@ -601,60 +688,6 @@ function showLessonWindow(testId) {
     loadLessonExplanation(test.topic, test.modules);
 }
 
-/* ========================================================
-   🤖 ЗАГРУЗКА ОБЪЯСНЕНИЯ ОТ GigaChat
-   ======================================================== */
-
-const GIGACHAT_API_KEY = "MDE5YzM2YjUtNWQ5ZC03MTFmLWE2MTItMGVmY2U2MzdmMzI3OjUwMGU5Zjk1LWUzMTMtNGFkMC05OWZhLWU3NGQ1ZTQ0MDIzMA==";// Функция получения токена с таймаутом
-// Храним токен и время его получения
-let cachedToken = null;
-let tokenExpiryTime = 0;
-
-// Функция получения токена с кэшированием
-async function getGigaChatToken() {
-    // Проверяем, есть ли ещё действующий токен (25 минут для запаса)
-    if (cachedToken && Date.now() < tokenExpiryTime) {
-        console.log('✅ Используем кэшированный токен');
-        return cachedToken;
-    }
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд
-    
-    try {
-        console.log('🔄 Получаем новый токен...');
-        const response = await fetch('https://ngw.devices.sberbank.ru:9443/api/v2/oauth', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': `Basic ${GIGACHAT_API_KEY}`,
-                'RqUID': crypto.randomUUID()
-            },
-            body: 'scope=GIGACHAT_API_PERS',
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        // Сохраняем токен на 25 минут (запас 5 минут)
-        cachedToken = data.access_token;
-        tokenExpiryTime = Date.now() + 25 * 60 * 1000;
-        
-        console.log('✅ Новый токен получен, действует 25 минут');
-        return cachedToken;
-        
-    } catch (error) {
-        clearTimeout(timeoutId);
-        console.error('❌ Ошибка получения токена:', error);
-        return null;
-    }
-}
 
 async function loadLessonExplanation(topic, modules) {
     const messageElement = document.getElementById('lesson-message');
@@ -925,58 +958,7 @@ async function finishTest(id) {
         }, 2000);
     }
 }
-// CORS-прокси для обхода блокировки
-const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
 
-// Модифицированная функция получения токена с прокси
-async function getGigaChatTokenWithProxy() {
-    // Проверяем, есть ли ещё действующий токен
-    if (cachedToken && Date.now() < tokenExpiryTime) {
-        console.log('✅ Используем кэшированный токен');
-        return cachedToken;
-    }
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-    
-    try {
-        console.log('🔄 Получаем новый токен через прокси...');
-        
-        // Используем прокси для обхода CORS
-        const response = await fetch(CORS_PROXY + 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': `Basic ${GIGACHAT_API_KEY}`,
-                'RqUID': crypto.randomUUID(),
-                'Origin': 'http://localhost:8000',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: 'scope=GIGACHAT_API_PERS',
-            signal: controller.signal,
-            mode: 'cors'
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        cachedToken = data.access_token;
-        tokenExpiryTime = Date.now() + 25 * 60 * 1000;
-        
-        console.log('✅ Новый токен получен через прокси');
-        return cachedToken;
-        
-    } catch (error) {
-        clearTimeout(timeoutId);
-        console.error('❌ Ошибка получения токена через прокси:', error);
-        return null;
-    }
-}
 /* ========================================================
    📚 СОЗДАНИЕ МЕТОДИЧКИ ДЛЯ ИЗУЧЕНИЯ (БЕЗ ПРАВИЛЬНЫХ ОТВЕТОВ)
    ======================================================== */
