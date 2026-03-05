@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduControl — Мой Кабинет ✨</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="student-page">
+
+    <div id="drop-anim"></div>
+
+    <header class="main-header">
+        <div class="app-logo">EduControl ✨</div>
+        <div class="user-block" onclick="toggleProfile()">
+            <div class="user-info">
+                <span id="h-name">Загрузка...</span>
+                <span id="h-grade" class="grade-label">Класс</span>
+            </div>
+            <div class="user-icon-circle" id="h-initials"></div>
+
+            <div id="dropdown" class="profile-dropdown">
+                <button onclick="startAvatarAnim()">✨ Сменить аватарку</button>
+                <button onclick="logout()" style="color: #ff7675;">🚪 Выйти</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="bookmark-container">
+        <div class="bookmark">
+            <span class="bookmark-icon">🏆</span>
+        </div>
+        
+        <div class="leaderboard-box" id="leaderboard">
+            <h4>🏆 Лидеры класса</h4>
+            <div id="classmates-list">
+                <div style="text-align:center; padding:40px; opacity:0.5;">👥 Загрузка...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2 style="margin-bottom: 30px; font-size: 2rem;">Твои задания 📚</h2>
+        
+        <div id="tests-list"></div>
+
+        <div id="active-test" class="card hidden" style="margin-top: 40px; padding: 40px; border-radius: 50px; border: 8px solid var(--accent);"></div>
+
+        <div id="ai-response" class="card hidden" style="margin-top: 30px;"></div>
+    </div>
+
+    <div id="avatar-modal" class="modal">
+        <div class="modal-content">
+            <h2>Твой стиль 🎨</h2>
+            <div class="avatar-grid">
+                <button onclick="setAvatar('👨‍🎓')">👨‍🎓</button>
+                <button onclick="setAvatar('🧠')">🧠</button>
+                <button onclick="setAvatar('⭐')">⭐</button>
+                <button onclick="setAvatar('🦄')">🦄</button>
+                <button onclick="setAvatar('🍕')">🍕</button>
+                <button onclick="setAvatar('🐱')">🐱</button>
+                <button onclick="setAvatar('🎮')">🎮</button>
+                <button onclick="setAvatar('🌈')">🌈</button>
+            </div>
+            <p style="margin: 15px 0;">Или загрузи своё фото:</p>
+            <input type="file" id="file-up" hidden accept="image/*" onchange="uploadPhoto(this)">
+            <button class="primary" onclick="document.getElementById('file-up').click()">Выбрать файл</button>
+            <button onclick="document.getElementById('avatar-modal').classList.remove('active')" style="background:none; border:none; margin-top:20px; color:#aaa; cursor:pointer;">Закрыть</button>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>

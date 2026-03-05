@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduControl — Вход ✨</title>
+    <link href="https://fonts.googleapis.com" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        body { 
+            margin: 0; 
+            background: #fdfbff; 
+            overflow: hidden; 
+            font-family: 'Comfortaa', cursive; 
+            font-weight: 900; 
+        }
+        
+        .star-scene {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center; z-index: 2000; pointer-events: none;
+        }
+        .swirl-star {
+            font-size: 60px;
+            animation: starFlight 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
+        }
+        @keyframes starFlight {
+            0% { transform: translate(-100vw, -100vh) rotate(0deg) scale(0); opacity: 1; }
+            40% { transform: translate(10vw, -20vh) rotate(720deg) scale(1.5); }
+            80% { transform: translate(0, 0) rotate(1440deg) scale(1); opacity: 1; }
+            100% { transform: translate(0, 0) rotate(1800deg) scale(45); opacity: 0; }
+        }
+        .white-flash {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; opacity: 0; z-index: 3000; pointer-events: none;
+        }
+        .flash-active { animation: flashAnim 0.7s ease-out forwards; }
+        @keyframes flashAnim { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
+
+        .auth-wrapper {
+            display: flex; justify-content: center; align-items: center; height: 100vh;
+            transform: scale(0); opacity: 0;
+        }
+        .auth-wrapper.show-card {
+            animation: cardPopUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 1;
+        }
+        @keyframes cardPopUp { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+        .auth-card {
+            width: 100%; max-width: 420px;
+            padding: 50px !important;
+            background: #fff;
+            border: 7px solid #f1f2f6 !important;
+            border-radius: 60px !important;
+            text-align: center;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.05);
+        }
+
+        .welcome-section h1 { font-weight: 900; font-size: 2.2rem; margin-bottom: 5px; color: #2d3436; }
+        .welcome-section p { font-weight: 700; color: #b2bec3; margin-bottom: 35px; }
+
+        input {
+            width: 100%; padding: 22px; margin-bottom: 18px;
+            border: 4px solid #f1f2f6; border-radius: 30px;
+            font-family: 'Comfortaa'; font-weight: 900; font-size: 1.1rem;
+            box-sizing: border-box; transition: 0.3s;
+        }
+        input:focus { border-color: #a29bfe; outline: none; background: #fafafa; }
+
+        button.primary {
+            width: 100%; padding: 22px; background: #2d3436;
+            color: #fff; border: none; border-radius: 30px;
+            font-weight: 900; font-size: 1.2rem; cursor: pointer;
+            transition: 0.3s;
+        }
+        button.primary:hover { transform: scale(1.03); background: #000; }
+    </style>
+</head>
+<body class="auth-page">
+
+    <div class="star-scene" id="star-scene"><div class="swirl-star">⭐</div></div>
+    <div class="white-flash" id="flash"></div>
+
+    <div class="auth-wrapper" id="auth-ui">
+        <div class="card auth-card">
+            <div class="welcome-section">
+                <h1>EduControl ✨</h1>
+                <p>Давай учиться вместе</p>
+            </div>
+            
+            <div class="input-group">
+                <input type="text" id="login-input" placeholder="Твой логин" spellcheck="false">
+                <input type="password" id="pass-input" placeholder="Пароль" maxlength="5">
+            </div>
+            
+            <button class="primary" onclick="handleLogin()">Войти в кабинет</button>
+            <p id="error-msg" style="color: #ff7675; margin-top: 20px; font-weight: 900; min-height: 24px;"></p>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+    
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const flash = document.getElementById('flash');
+                if (flash) flash.classList.add('flash-active');
+                
+                setTimeout(() => {
+                    const scene = document.getElementById('star-scene');
+                    const ui = document.getElementById('auth-ui');
+                    if (scene) scene.style.display = 'none';
+                    if (ui) ui.classList.add('show-card');
+                }, 350);
+            }, 2100);
+        });
+    </script>
+</body>
+</html>
