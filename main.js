@@ -39,7 +39,7 @@ let cachedToken = null;
 let tokenExpiryTime = 0;
 
 // CORS-прокси для GigaChat
-const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
 // Модифицированная функция получения токена
 async function getGigaChatToken() {
