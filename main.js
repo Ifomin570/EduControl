@@ -30,50 +30,6 @@ let currentTestId = null;
 let wrongQuestions = [];
 
 /* ========================================================
-   🤖 ЗАГРУЗКА ОБЪЯСНЕНИЯ ОТ GigaChat
-   ======================================================== */
-
-const GIGACHAT_API_KEY = "MDE5YzM2YjUtNWQ5ZC03MTFmLWE2MTItMGVmY2U2MzdmMzI3OmQ5MjY1ZjVlLWQ5MDAtNDA5ZS04Zjk1LWMwYTllNTQxZjQ1Yw==";// Храним токен и время его получения
-// Храним токен (один раз получаем и всё)
-let cachedToken = null;
-
-// Простейшая функция получения токена
-async function getGigaChatToken() {
-    // Если токен уже есть - возвращаем его
-    if (cachedToken) {
-        console.log('✅ Используем существующий токен');
-        return cachedToken;
-    }
-    
-    try {
-        console.log('🔄 Получаем токен из API...');
-        
-        const response = await fetch('https://ngw.devices.sberbank.ru:9443/api/v2/oauth', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': `Basic ${GIGACHAT_API_KEY}`,
-                'RqUID': crypto.randomUUID()
-            },
-            body: 'scope=GIGACHAT_API_PERS'
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        cachedToken = data.access_token;
-        
-        console.log('✅ Токен получен и сохранён');
-        return cachedToken;
-        
-    } catch (error) {
-        console.error('❌ Ошибка получения токена:', error);
-        return null;
-    }
-}
-/* ========================================================
    🔧 ИНИЦИАЛИЗАЦИЯ СТРАНИЦЫ
    ======================================================== */
 
@@ -915,7 +871,42 @@ async function finishTest(id) {
         }, 2000);
     }
 }
+/* ========================================================
+   🤖 ЗАГРУЗКА ОБЪЯСНЕНИЯ ОТ GigaChat
+   ======================================================== */
 
+const GIGACHAT_API_KEY = "MDE5YzM2YjUtNWQ5ZC03MTFmLWE2MTItMGVmY2U2MzdmMzI3OjdmODcyZTZlLTE4OTYtNDIwMC1hYTU2LTNkYjQ2OTFhYzcwZg==";
+// Функция получения токена с таймаутом
+async function getGigaChatToken() {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // Таймаут 5 секунд
+    
+    try {
+        const response = await fetch('https://ngw.devices.sberbank.ru:9443/api/v2/oauth', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': `Basic ${GIGACHAT_API_KEY}`,
+                'RqUID': crypto.randomUUID()
+            },
+            body: 'scope=GIGACHAT_API_PERS',
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return data.access_token;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        console.error('Ошибка получения токена:', error);
+        return null; // Возвращаем null при ошибке
+    }
+}
 /* ========================================================
    📚 СОЗДАНИЕ МЕТОДИЧКИ ДЛЯ ИЗУЧЕНИЯ (БЕЗ ПРАВИЛЬНЫХ ОТВЕТОВ)
    ======================================================== */
