@@ -33,25 +33,45 @@ let wrongQuestions = [];
    🤖 ЗАГРУЗКА ОБЪЯСНЕНИЯ ОТ GigaChat
    ======================================================== */
 
-const GIGACHAT_API_KEY = "MDE5YzM2YjUtNWQ5ZC03MTFmLWE2MTItMGVmY2U2MzdmMzI3OmQ5MjY1ZjVlLWQ5MDAtNDA5ZS04Zjk1LWMwYTllNTQxZjQ1Yw==";// Функция получения токена с таймаутом
-// Храним токен и время его получения
+const GIGACHAT_API_KEY = "MDE5YzM2YjUtNWQ5ZC03MTFmLWE2MTItMGVmY2U2MzdmMzI3OmQ5MjY1ZjVlLWQ5MDAtNDA5ZS04Zjk1LWMwYTllNTQxZjQ1Yw==";// Храним токен и время его получения
+// Храним токен (один раз получаем и всё)
 let cachedToken = null;
-let tokenExpiryTime = 0;
-// Для allorigins нужно немного изменить код
-async function getGigaChatToken() {
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
-        
-        window[callbackName] = function(data) {
-            delete window[callbackName];
-            document.body.removeChild(script);
-            resolve(data.access_token);
-        };
 
-        script.src = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://ngw.devices.sberbank.ru:9443/api/v2/oauth') + '&callback=' + callbackName;
-        document.body.appendChild(script);
-    });
+// Простейшая функция получения токена
+async function getGigaChatToken() {
+    // Если токен уже есть - возвращаем его
+    if (cachedToken) {
+        console.log('✅ Используем существующий токен');
+        return cachedToken;
+    }
+    
+    try {
+        console.log('🔄 Получаем токен из API...');
+        
+        const response = await fetch('https://ngw.devices.sberbank.ru:9443/api/v2/oauth', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': `Basic ${GIGACHAT_API_KEY}`,
+                'RqUID': crypto.randomUUID()
+            },
+            body: 'scope=GIGACHAT_API_PERS'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        cachedToken = data.access_token;
+        
+        console.log('✅ Токен получен и сохранён');
+        return cachedToken;
+        
+    } catch (error) {
+        console.error('❌ Ошибка получения токена:', error);
+        return null;
+    }
 }
 /* ========================================================
    🔧 ИНИЦИАЛИЗАЦИЯ СТРАНИЦЫ
