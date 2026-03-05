@@ -37,9 +37,10 @@ const GIGACHAT_API_KEY = "MDE5YzM2YjUtNWQ5ZC03MTFmLWE2MTItMGVmY2U2MzdmMzI3OjUwMG
 // Храним токен и время его получения
 let cachedToken = null;
 let tokenExpiryTime = 0;
+// Для allorigins нужно немного изменить код
 
 // CORS-прокси для GigaChat
-const CORS_PROXY = 'https://thingproxy.freeboard.io/fetch/';
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
 // Модифицированная функция получения токена
 async function getGigaChatToken() {
@@ -55,7 +56,8 @@ async function getGigaChatToken() {
         console.log('🔄 Получаем новый токен через прокси...');
         
         // 1. Запрос токена через прокси
-        const tokenResponse = await fetch(CORS_PROXY + 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth', {
+       // Для allorigins нужно немного изменить код
+       const tokenResponse = await fetch(CORS_PROXY + encodeURIComponent('https://ngw.devices.sberbank.ru:9443/api/v2/oauth'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
