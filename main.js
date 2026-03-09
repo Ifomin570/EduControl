@@ -875,7 +875,7 @@ async function finishTest(id) {
    🤖 ЗАГРУЗКА ОБЪЯСНЕНИЯ ОТ GigaChat
    ======================================================== */
 
-const GIGACHAT_API_KEY = "MDE5YzM2YjUtNWQ5ZC03MTFmLWE2MTItMGVmY2U2MzdmMzI3OmE0YzI2ZTE2LThhMzItNDQ4YS1hZDUzLTZjZDYwOTJhOWNlYQ==";
+const GIGACHAT_API_KEY = "MDE5YzM2YjUtNWQ5ZC03MTFmLWE2MTItMGVmY2U2MzdmMzI3OmYzNDBlOWE0LThmYWItNGM5Mi04NTEzLTQ3MjllMjgxMzgzYw==";
 async function getGigaChatToken() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
